@@ -41,15 +41,15 @@
 
         // 2. High-Contrast Lighting
         // This creates "rim lighting" so you can see the edges of the wheel
-        const mainLight = new THREE.DirectionalLight(0xffffff, 0.0); 
+        const mainLight = new THREE.DirectionalLight(0xffffff, 1.0); 
         mainLight.position.set(5, 10, 7);
         scene.add(mainLight);
 
-        const fillLight = new THREE.PointLight(0xffffff, 0.0);
+        const fillLight = new THREE.PointLight(0xffffff, 1.0);
         fillLight.position.set(-5, 0, -5);
         scene.add(fillLight);
 
-        const ambient = new THREE.AmbientLight(0xffffff, 0.0); // Low ambient so shadows exist
+        const ambient = new THREE.AmbientLight(0xffffff, 1.0); // Low ambient so shadows exist
         scene.add(ambient);
         
         camera.position.z = 5;
@@ -61,18 +61,6 @@
         loader.load('11_alien_radio_2.glb', (gltf) => {
             const model = gltf.scene;
             scene.add(model);
-
-            model.traverse((child) => {
-                if (child.isMesh) {
-                    // Force the material to be less "mirrored"
-                    child.material.metalness = 0.2; 
-                    child.material.roughness = 0.8;
-                    
-                    // If it's still white, let's see if it HAS a color
-                    console.log(child.name + " color is: ", child.material.color);
-                }
-            });
-
             wheel = model.getObjectByName('outer');
         });
 
