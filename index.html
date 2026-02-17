@@ -26,6 +26,7 @@
     <script type="module">
         import * as THREE from 'three';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        // Add a quick "Studio" environment so reflections have something to show
 
         // 1. Scene Setup
         const scene = new THREE.Scene();
@@ -33,15 +34,24 @@
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
+        renderer.toneMappingExposure = 0.0001; // Adjust brightness
+        renderer.outputColorSpace = THREE.SRGBColorSpace; 
+        renderer.toneMapping = THREE.ReinhardToneMapping; // Helps colors look "natural"
+        renderer.setClearColor(0x222222); // Dark grey background instead of black
 
-        // 2. Lighting
-        const light = new THREE.DirectionalLight(0xffffff, 2); // Increased intensity to 2
-        light.position.set(5, 5, 5); 
-        scene.add(light); // Correct way to add to scene
+        // 2. High-Contrast Lighting
+        // This creates "rim lighting" so you can see the edges of the wheel
+        const mainLight = new THREE.DirectionalLight(0xffffff, 0.0); 
+        mainLight.position.set(5, 10, 7);
+        scene.add(mainLight);
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Soft white light everywhere
-        scene.add(ambientLight);
+        const fillLight = new THREE.PointLight(0xffffff, 0.0);
+        fillLight.position.set(-5, 0, -5);
+        scene.add(fillLight);
 
+        const ambient = new THREE.AmbientLight(0xffffff, 0.0); // Low ambient so shadows exist
+        scene.add(ambient);
+        
         camera.position.z = 5;
 
         // 3. Load the Model
@@ -52,7 +62,18 @@
             const model = gltf.scene;
             scene.add(model);
 
-            wheel = model.getObjectByName('outer'); 
+            model.traverse((child) => {
+                if (child.isMesh) {
+                    // Force the material to be less "mirrored"
+                    child.material.metalness = 0.2; 
+                    child.material.roughness = 0.8;
+                    
+                    // If it's still white, let's see if it HAS a color
+                    console.log(child.name + " color is: ", child.material.color);
+                }
+            });
+
+            wheel = model.getObjectByName('outer');
         });
 
         // 4. Interaction Logic
