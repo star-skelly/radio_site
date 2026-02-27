@@ -35,24 +35,29 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
         renderer.toneMappingExposure = 0.0001; // Adjust brightness
-        renderer.outputColorSpace = THREE.SRGBColorSpace; 
-        renderer.toneMapping = THREE.ReinhardToneMapping; // Helps colors look "natural"
-        renderer.setClearColor(0x222222); // Dark grey background instead of black
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.toneMapping = THREE.ReinhardToneMapping;  
+        renderer.setClearColor(0x442922);
 
         // 2. High-Contrast Lighting
         // This creates "rim lighting" so you can see the edges of the wheel
-        const mainLight = new THREE.DirectionalLight(0xffffff, 1.0); 
+        const mainLight = new THREE.DirectionalLight(0xffffff, 0.0); 
         mainLight.position.set(5, 10, 7);
         scene.add(mainLight);
 
-        const fillLight = new THREE.PointLight(0xffffff, 1.0);
-        fillLight.position.set(-5, 0, -5);
-        scene.add(fillLight);
+        //const fillLight = new THREE.PointLight(0xffffff, 1.0);
+        //fillLight.position.set(-5, 0, -5);
+        //scene.add(fillLight);
 
-        const ambient = new THREE.AmbientLight(0xffffff, 1.0); // Low ambient so shadows exist
-        scene.add(ambient);
+        //const ambient = new THREE.AmbientLight(0xffffff, 1.0); // Low ambient so shadows exist
+        //scene.add(ambient);
         
-        camera.position.z = 5;
+        camera.position.z = 4;
+        camera.position.y = 2;
+        camera.position.x = -2;
+        camera.rotation.x = -0.4;
+        camera.rotation.y = -0.2;
+        camera.rotation.z = -0.1;
 
         // 3. Load the Model
         let wheel;
