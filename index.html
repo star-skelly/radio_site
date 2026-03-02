@@ -18,6 +18,7 @@
         {
             "imports": {
                 "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
                 "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
             }
         }
@@ -26,6 +27,8 @@
     <script type="module">
         import * as THREE from 'three';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+        import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
         // Add a quick "Studio" environment so reflections have something to show
 
         // 1. Scene Setup
@@ -34,23 +37,24 @@
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
-        renderer.toneMappingExposure = 0.0001; // Adjust brightness
+        renderer.toneMappingExposure = 1.0; // Adjust brightness
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         renderer.toneMapping = THREE.ReinhardToneMapping;  
-        renderer.setClearColor(0x442922);
 
         // 2. High-Contrast Lighting
         // This creates "rim lighting" so you can see the edges of the wheel
-        const mainLight = new THREE.DirectionalLight(0xffffff, 0.0); 
+        const environment = new RoomEnvironment(renderer);
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);
+        const mainLight = new THREE.DirectionalLight(0xffffff, 10.0); 
         mainLight.position.set(5, 10, 7);
         scene.add(mainLight);
 
-        //const fillLight = new THREE.PointLight(0xffffff, 1.0);
-        //fillLight.position.set(-5, 0, -5);
-        //scene.add(fillLight);
+        const fillLight = new THREE.PointLight(0xffffff, 10.0);
+        fillLight.position.set(-5, 0, -5);
+        scene.add(fillLight);
 
-        //const ambient = new THREE.AmbientLight(0xffffff, 1.0); // Low ambient so shadows exist
-        //scene.add(ambient);
+        const ambient = new THREE.AmbientLight(0xffffff, 10.0); // Low ambient so shadows exist
+        scene.add(ambient);
         
         camera.position.z = 4;
         camera.position.y = 2;
@@ -61,14 +65,32 @@
 
         // 3. Load the Model
         let wheel;
+        let radio_base;
+        const textureLoader = new THREE.TextureLoader();
         const loader = new GLTFLoader();
-        
-        loader.load('11_alien_radio_2.glb', (gltf) => {
-            const model = gltf.scene;
-            scene.add(model);
-            wheel = model.getObjectByName('outer');
-        });
+        const dracoLoader = new DRACOLoader();
+        const baseTexture = textureLoader.load('textures/radio_base.png');
+        const baseRough = textureLoader.load('textures/00_rad_roughness.png');
+        const baseNorm = textureLoader.load('textures/00_rad_roughness.png');
+        baseTexture.flipY = false; 
+        baseTexture.colorSpace = THREE.SRGBColorSpace;
+        dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+        loader.setDRACOLoader(dracoLoader);
 
+        loader.load('11_alien_radio_2.gltf', (gltf) => {
+            const model = gltf.scene;
+            radio_base = model.getObjectByName('radio_base');
+            radio_base.material.map = baseTexture;                
+            radio_base.material.roughness = baseRough; 
+            radio_base.material.normal = baseNorm;
+            radio_base.material.metalness = 1.0;
+            
+            radio_base.material.needsUpdate = true;
+            
+            wheel = model.getObjectByName('outer');
+
+            scene.add(model);
+        });
         // 4. Interaction Logic
         let isDragging = false;
         let previousMouseX = 0;
