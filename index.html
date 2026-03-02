@@ -5,16 +5,13 @@
     <title>Interactive 3D Wheel</title>
     <style>
         body { margin: 0; overflow: hidden; background: #111; }
-        #instructions {
-            position: absolute; top: 10px; left: 10px;
-            color: white; font-family: sans-serif; pointer-events: none;
-        }
     </style>
 </head>
     <body>
         <div id="ui-container">
+        <div id="instructions">Turn the wheel to get your radio station.</div>
         <div id="radio-station">No Station Found</div>
-        <div id="frequency-display">14.94</div>
+        <div id="frequency-display">14.45</div>
         <span id="unit">simibab</span>
     </div>
 
@@ -38,8 +35,6 @@
             font-size: 50px;
         }
     </style>
-    <div id="instructions">Turn the wheel to get your radio station.</div>
-
     <script type="importmap">
         {
             "imports": {
@@ -70,13 +65,19 @@
         // Lighting
         const environment = new RoomEnvironment(renderer);
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
-        const mainLight = new THREE.DirectionalLight(0xFFBBBB, 3.0); 
-        mainLight.position.set(5, 10, 7);
-        scene.add(mainLight);
+        //const mainLight = new THREE.DirectionalLight(0xFFBBBB, 4.0); 
+        //mainLight.position.set(-5, 10, -7);
+        //scene.add(mainLight);
 
-        const fillLight = new THREE.PointLight(0xFFBB43, 2);
-        fillLight.position.set(-5, 0, -5);
+        const fillLight = new THREE.PointLight(0x926CA9, 3.3, 0, 0.27);
+        fillLight.position.set(2.5, 1.75, -0.5);
+        fillLight.power = 100;
         scene.add(fillLight);
+        
+        const fillLight2 = new THREE.PointLight(0xFFBB43, 1.4, 0, 1.1);
+        fillLight2.power = 1000;
+        fillLight2.position.set(2.3, 3.05, 1.75);
+        scene.add(fillLight2);
 
         const ambient = new THREE.AmbientLight(0xFFBB43, 100.0); // Low ambient so shadows exist
         scene.add(ambient);
@@ -126,9 +127,23 @@
         loader.load('11_alien_radio_2.gltf', (gltf) => {
             const model = gltf.scene;
             const radio_base = model.getObjectByName('radio_base');
+            const wired = model.getObjectByName('wired');
             const bgs = model.getObjectByName('feet_n_backs');
+            const grid = model.getObjectByName('grid');
 
             wheel = model.getObjectByName('outer_ring');
+            if (grid) {
+                grid.material.color.set(0xE3CBB8);
+                grid.material.roughness = 1.0;
+                wired.material.metalness = 0.0;
+                grid.material.needsUpdate = true;
+            }
+            if (wired) {
+                wired.material.color.set(0x000000);
+                wired.material.roughness = 0.0;
+                wired.material.metalness = 1.0;
+                wired.material.needsUpdate = true;
+            }
             if (bgs) {
                 bgs.material.color.set(0x361E0F);
                 bgs.material.roughness = 1.0;
@@ -136,17 +151,22 @@
                 bgs.material.needsUpdate = true;
             }
             if (radio_base) {
+                const oldMat = radio_base.material;
+                radio_base.material = new THREE.MeshPhysicalMaterial().copy(oldMat);
                 Object.assign(radio_base.material, baseTextures);
                 
+                radio_base.material.sheen = 0.4;
+                radio_base.material.sheenColor = new THREE.Color(0x704A39); 
+                radio_base.material.sheenRoughness = 0.5;
                 radio_base.material.metalness = 1.0;
-                radio_base.material.normalScale.set(2, 2);
+                radio_base.material.normalScale.set(0.8, 0.8);
                 radio_base.material.needsUpdate = true;
             }            
 
             if (wheel) {
                 Object.assign(wheel.material, wheelTextures);
-                wheel.material.metalness = 0.9;
-                wheel.material.normalScale.set(1.5, 1.5);
+                wheel.material.metalness = 0.95;
+                wheel.material.normalScale.set(1, 1);
                 wheel.material.needsUpdate = true;
             }
             scene.add(model);
@@ -154,16 +174,20 @@
         // 4. Interaction Logic
         let isDragging = false;
         let previousMouseX = 0;
+        let previousMouseY = 0;
+        let previousAngle = 0;
 
         window.addEventListener('mousedown', () => isDragging = true);
         window.addEventListener('mouseup', () => isDragging = false);
         window.addEventListener('mousemove', (event) => {
             if (isDragging && wheel) {
-                const deltaX = event.clientX - previousMouseX;
-                wheel.rotation.y += deltaX * 0.01; 
+                const xDiff = event.clientX - previousMouseX;
+                const yDiff = event.clientY - previousMouseY;
+                wheel.rotation.y += xDiff * 0.005;
                 updateUI();
             }
             previousMouseX = event.clientX;
+            previousMouseY = event.clientY;
         });
 
         // 5. Animation Loop
