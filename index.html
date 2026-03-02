@@ -37,7 +37,7 @@
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
-        renderer.toneMappingExposure = 1.0; // Adjust brightness
+        renderer.toneMappingExposure = 0.001; // Adjust brightness
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         renderer.toneMapping = THREE.ReinhardToneMapping;  
 
@@ -45,15 +45,15 @@
         // This creates "rim lighting" so you can see the edges of the wheel
         const environment = new RoomEnvironment(renderer);
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
-        const mainLight = new THREE.DirectionalLight(0xffffff, 10.0); 
+        const mainLight = new THREE.DirectionalLight(0xffffff, 1.0); 
         mainLight.position.set(5, 10, 7);
         scene.add(mainLight);
 
-        const fillLight = new THREE.PointLight(0xffffff, 10.0);
+        const fillLight = new THREE.PointLight(0xffffff, 1.);
         fillLight.position.set(-5, 0, -5);
         scene.add(fillLight);
 
-        const ambient = new THREE.AmbientLight(0xffffff, 10.0); // Low ambient so shadows exist
+        const ambient = new THREE.AmbientLight(0xffffff, 100.0); // Low ambient so shadows exist
         scene.add(ambient);
         
         camera.position.z = 4;
@@ -69,26 +69,53 @@
         const textureLoader = new THREE.TextureLoader();
         const loader = new GLTFLoader();
         const dracoLoader = new DRACOLoader();
-        const baseTexture = textureLoader.load('textures/radio_base.png');
-        const baseRough = textureLoader.load('textures/00_rad_roughness.png');
-        const baseNorm = textureLoader.load('textures/00_rad_roughness.png');
-        baseTexture.flipY = false; 
-        baseTexture.colorSpace = THREE.SRGBColorSpace;
+
+        const textureConfigs = [
+            { type: 'map', url: 'textures/radio_base.png', isSRGB: true, isWheel: false },
+            { type: 'roughnessMap', url: 'textures/00_rad_glossy.png', isSRGB: false, isWheel: false },
+            { type: 'normalMap', url: 'textures/00_rad_normal.png', isSRGB: false, isWheel: false },  
+            { type: 'metalnessMap', url: 'textures/00_rad_glossy.png', isSRGB: false, isWheel: false }, 
+            
+            // For the wheel, we use the same 'type' names so they plug into the right material slots
+            { type: 'roughnessMap', url: 'textures/00_wheel_roughness.png', isSRGB: false, isWheel: true },
+            { type: 'normalMap', url: 'textures/00_wheel_normal.png', isSRGB: false, isWheel: true },
+            { type: 'map', url: 'textures/00_wheel_color.png', isSRGB: true, isWheel: true },
+        ];
+        const baseTextures = {};
+        const wheelTextures = {}
+        
+        textureConfigs.forEach(config => {
+            const tex = textureLoader.load(config.url);
+            tex.flipY = false;
+            if (config.isSRGB) tex.colorSpace = THREE.SRGBColorSpace;
+
+            if (config.isWheel) {
+                wheelTextures[config.type] = tex;
+            } else {
+                baseTextures[config.type] = tex;
+            }
+        });
+
         dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
         loader.setDRACOLoader(dracoLoader);
 
         loader.load('11_alien_radio_2.gltf', (gltf) => {
             const model = gltf.scene;
-            radio_base = model.getObjectByName('radio_base');
-            radio_base.material.map = baseTexture;                
-            radio_base.material.roughness = baseRough; 
-            radio_base.material.normal = baseNorm;
-            radio_base.material.metalness = 1.0;
-            
-            radio_base.material.needsUpdate = true;
-            
+            const radio_base = model.getObjectByName('radio_base');
             wheel = model.getObjectByName('outer');
 
+            if (radio_base) {
+                Object.assign(radio_base.material, baseTextures);
+                
+                radio_base.material.normalScale.set(-1., 1.);
+                radio_base.material.needsUpdate = true;
+            }            
+
+            if (wheel) {
+                Object.assign(wheel.material, wheelTextures);
+                wheel.material.normalScale.set(-1., 1.);
+                wheel.material.needsUpdate = true;
+            }
             scene.add(model);
         });
         // 4. Interaction Logic
