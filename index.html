@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Interactive 3D Wheel</title>
+    <title>Torobos Ham Radio</title>
     <style>
         body { margin: 0; overflow: hidden; background: #111; }
     </style>
@@ -13,6 +13,10 @@
         <div id="radio-station">No Station Found</div>
         <div id="frequency-display">14.45 sb</div>
         <br>
+        <audio id="main-audio" controls autoplay>
+            <source src="" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
         <div id="description"></div>
     </div>
 
@@ -244,6 +248,7 @@
         const freqDisplay = document.getElementById('frequency-display');
         const radioStation = document.getElementById('radio-station');
         const stationDescription = document.getElementById('description');
+        const audioPlay = document.getElementById('audio-source');
 
         const minFreq = 12.83;
         const maxFreq = 15.93;
@@ -262,6 +267,12 @@
             if (activeChannel) {
                 radioStation.innerText = activeChannel.name;
                 stationDescription.innerText = activeChannel.description;
+                const newSrc = "audio/frog_drums.mp3";
+                if (audioPlayer.getAttribute('src') !== newSrc) {
+                    audioPlayer.src = newSrc;
+                    audioPlayer.load(); // Vital: tells the browser to buffer the new file
+                    audioPlayer.play(); // Browsers often block autoplay; this helps
+                }
             } else {
                 radioStation.innerText = "NO SIGNAL";
                 stationDescription.innerText = "Keep tuning the dial...";
