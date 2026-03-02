@@ -9,11 +9,10 @@
 </head>
     <body>
         <div id="ui-container">
-        <div id="instructions">Turn the wheel to get your radio station.</div>
+        <div id="instructions">Use the &#8679 and &#8681 keys or turn the wheel to browse channels.</div>
         <div id="radio-station">No Station Found</div>
-        <div id="frequency-display">14.45</div>
-        <span id="unit">simibab</span>
-        <div></div>
+        <div id="frequency-display">14.45 sb</div>
+        <br>
         <div id="description"></div>
     </div>
 
@@ -35,6 +34,10 @@
         }
         #radio-station {
             font-size: 50px;
+        }
+        #description {
+            word-wrap: break-word;
+            width: 30%;
         }
     </style>
     <script type="importmap">
@@ -187,7 +190,16 @@
         let previousMouseX = 0;
         let previousMouseY = 0;
         let angleChange = 0;
-    
+        
+        window.addEventListener("keydown", function (event) {
+            if (event.key === "ArrowUp") {
+                wheel.rotation.y += 0.1;
+            } else if (event.key === "ArrowDown") {
+                wheel.rotation.y -= 0.1;
+            }
+            updateUI();
+        });
+
         window.addEventListener('mousedown', () => isDragging = true);
         window.addEventListener('mouseup', () => isDragging = false);
         window.addEventListener('mousemove', (event) => {
@@ -222,6 +234,13 @@
         });
 
         // normal text part
+        let radioChannels = [];
+
+        fetch('./channel_descriptions.json')
+            .then(res => res.json())
+            .then(data => {
+                radioChannels = data.channels;
+            });
         const freqDisplay = document.getElementById('frequency-display');
         const radioStation = document.getElementById('radio-station');
         const stationDescription = document.getElementById('description');
@@ -235,24 +254,20 @@
             const rotation = Math.abs(wheel.rotation.y % (Math.PI * 2));
             const percent = rotation / (Math.PI * 2);
             const freq = minFreq + (percent * (maxFreq - minFreq));
+            
+            const activeChannel = radioChannels.find(channel => 
+                freq >= channel.min && freq <= channel.max
+            );
 
-            radioStation.innerText = "No Station Found";
-            if (freq < 15.5 && freq > 15) {
-                radioStation.innerText = "THE PATCH";
-                stationDescription.innerText = "";
-            } else if (freq > 15.5) {
-                radioStation.innerText = "[##############]";
-            } else if (freq < 15 && freq > 14.5) {
-                radioStation.innerText = "*- yaga simplex -*";
-            } else if (freq < 14 && freq > 13.5) {
-                radioStation.innerText = "DusterDigi";
-            } else if (freq < 13.5 && freq > 13) {
-                radioStation.innerText = "Radio :Bai:Bai";
-            } else if (freq < 13 && freq > 12.5) {
-                radioStation.innerText = "Hopetown Blues";
+            if (activeChannel) {
+                radioStation.innerText = activeChannel.name;
+                stationDescription.innerText = activeChannel.description;
+            } else {
+                radioStation.innerText = "NO SIGNAL";
+                stationDescription.innerText = "Keep tuning the dial...";
             }
             
-            freqDisplay.innerText = freq.toFixed(2);
+            freqDisplay.innerText = freq.toFixed(2) + " sb";
         }
     </script>
 </body>

@@ -1,0 +1,32 @@
+{
+    "channels":[
+        {"name": "[##############]",
+        "min": 15.7,
+        "max": 15.9,
+        "description":"this channel is not publically listed."},
+        {"name": "THE PATCH",
+        "min": 15.2,
+        "max": 15.7,
+        "description": "YOUR #1 SOURCE FOR ALL PIRATICAL NEWS. CATCH UP ON THE MOST RECENT QUEEN'S CUPS, HEAR PERSPECTIVES FROM CIVVY SAILS, AND AS ALWAYS... SUPPORT YOUR HOSTS, THE ICONIC MESSY DUO KNOWN ACROSS THE MOON, OUR VERY OWN... ARRAT AND HEPBAN."}, 
+        {"name": "Economy on Air",
+        "min": 14.8,
+        "max": 15.2,
+        "description": "Live reporting on Haven markets from trusted economic advisors. Prices reported daily."},
+        {"name": "*- yaga simplex -*",
+        "min": 14.3,
+        "max": 14.8,
+        "description": "// moonday to duneday // we play *~·non-stop·~* !HITS! every hour of the day, every fifth of the year \n you will hear us in the ]:clubbb:[ you will hear us in the ¡^towerrr^¡ you will hear us in your (=@head@=)"},
+        {"name": "DusterDigi",
+        "min": 13.8,
+        "max": 14.3,
+        "description": "Your mama's classics and today's new buzz -- tune in for jams, interviews, and more!"},
+        {"name": "Radio :Bai:Bai",
+        "min": 13.3,
+        "max": 13.8,
+        "description":"Nawan ha ghakghaghu-obayuu radio buudzuna so ruu Radio :Bai:Bai, gha edaluubaighi ludh-athaa so aghibibai gaal so udakughubibai-dhib. Ludh-suubai ranga-dhib ghu-udz-udz-udz obayuuyuu so bikhughubai athaa ulala ludh-dabo ighughu, biladhadha, sulrakinkin-dhib."},
+        {"name": "Hopetown Blues",
+        "min": 12.8,
+        "max": 13.3,
+        "description": "Listen in for a taste of the outpost soul. With blues gathered from across the Western Hemisphere, we bring you the best of Duster sound. And the music of our minds is a beautiful thing to behold."}
+    ]
+}
