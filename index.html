@@ -13,6 +13,8 @@
         <div id="radio-station">No Station Found</div>
         <div id="frequency-display">14.45</div>
         <span id="unit">simibab</span>
+        <div></div>
+        <div id="description"></div>
     </div>
 
     <style>
@@ -97,27 +99,36 @@
         const dracoLoader = new DRACOLoader();
 
         const textureConfigs = [
-            { type: 'map', url: 'textures/00_rad_color.png', isSRGB: true, isWheel: false },
-            { type: 'roughnessMap', url: 'textures/00_rad_roughness.png', isSRGB: false, isWheel: false },
-            { type: 'normalMap', url: 'textures/00_rad_normal.png', isSRGB: false, isWheel: false },  
+            // radio base
+            { type: 'map', url: 'textures/00_rad_color.png', isSRGB: true, obj: 'rad' },
+            { type: 'roughnessMap', url: 'textures/00_rad_roughness.png', isSRGB: false, obj: 'rad' },
+            { type: 'normalMap', url: 'textures/00_rad_normal.png', isSRGB: false, obj: 'rad' },  
             
-            // For the wheel, we use the same 'type' names so they plug into the right material slots
-            { type: 'roughnessMap', url: 'textures/00_wheel_roughness.png', isSRGB: false, isWheel: true },
-            { type: 'normalMap', url: 'textures/00_wheel_normal.png', isSRGB: false, isWheel: true },
-            { type: 'map', url: 'textures/00_wheel_color.png', isSRGB: true, isWheel: true },
+            // wheel
+            { type: 'roughnessMap', url: 'textures/00_wheel_roughness.png', isSRGB: false, obj: 'wheel' },
+            { type: 'normalMap', url: 'textures/00_wheel_normal.png', isSRGB: false, obj: 'wheel' },
+            { type: 'map', url: 'textures/00_wheel_color.png', isSRGB: true, obj: 'wheel' },
+
+            // wiring
+            { type: 'roughnessMap', url: 'textures/00_wire_roughness.png', isSRGB: false, obj: 'wire' },
+            { type: 'normalMap', url: 'textures/00_wire_normal.png', isSRGB: false, obj: 'wire' },
+            { type: 'map', url: 'textures/00_wire_color.png', isSRGB: true, obj: 'wire' },
         ];
         const baseTextures = {};
-        const wheelTextures = {}
+        const wheelTextures = {};
+        const wireTextures = {};
         
         textureConfigs.forEach(config => {
             const tex = textureLoader.load(config.url);
             tex.flipY = false;
             if (config.isSRGB) tex.colorSpace = THREE.SRGBColorSpace;
 
-            if (config.isWheel) {
+            if (config.obj === 'wheel') {
                 wheelTextures[config.type] = tex;
-            } else {
+            } else if (config.obj === 'rad') {
                 baseTextures[config.type] = tex;
+            } else if (config.obj === 'wire') {
+                wireTextures[config.type] = tex;
             }
         });
 
@@ -138,12 +149,6 @@
                 wired.material.metalness = 0.0;
                 grid.material.needsUpdate = true;
             }
-            if (wired) {
-                wired.material.color.set(0x000000);
-                wired.material.roughness = 0.0;
-                wired.material.metalness = 1.0;
-                wired.material.needsUpdate = true;
-            }
             if (bgs) {
                 bgs.material.color.set(0x361E0F);
                 bgs.material.roughness = 1.0;
@@ -155,19 +160,25 @@
                 radio_base.material = new THREE.MeshPhysicalMaterial().copy(oldMat);
                 Object.assign(radio_base.material, baseTextures);
                 
-                radio_base.material.sheen = 0.4;
+                radio_base.material.sheen = 0.1;
                 radio_base.material.sheenColor = new THREE.Color(0x704A39); 
                 radio_base.material.sheenRoughness = 0.5;
                 radio_base.material.metalness = 1.0;
-                radio_base.material.normalScale.set(0.8, 0.8);
+                radio_base.material.normalScale.set(-1, -1);
                 radio_base.material.needsUpdate = true;
             }            
 
             if (wheel) {
                 Object.assign(wheel.material, wheelTextures);
-                wheel.material.metalness = 0.95;
-                wheel.material.normalScale.set(1, 1);
+                wheel.material.metalness = 0.99;
+                wheel.material.normalScale.set(3, 3);
                 wheel.material.needsUpdate = true;
+            }
+
+            if (wired) {
+                Object.assign(wired.material, wireTextures);
+                wired.material.metalness = 1.0;
+                wired.material.needsUpdate = true;
             }
             scene.add(model);
         });
@@ -175,15 +186,21 @@
         let isDragging = false;
         let previousMouseX = 0;
         let previousMouseY = 0;
-        let previousAngle = 0;
-
+        let angleChange = 0;
+    
         window.addEventListener('mousedown', () => isDragging = true);
         window.addEventListener('mouseup', () => isDragging = false);
         window.addEventListener('mousemove', (event) => {
             if (isDragging && wheel) {
                 const xDiff = event.clientX - previousMouseX;
                 const yDiff = event.clientY - previousMouseY;
-                wheel.rotation.y += xDiff * 0.005;
+                if (Math.abs(angleChange) < (Math.PI / 20.0)) {
+                    angleChange += (xDiff + yDiff) * 0.003;
+                    wheel.rotation.y += (xDiff + yDiff) * 0.0005;
+                } else {
+                    wheel.rotation.y += angleChange;
+                    angleChange = 0;
+                }
                 updateUI();
             }
             previousMouseX = event.clientX;
@@ -207,6 +224,7 @@
         // normal text part
         const freqDisplay = document.getElementById('frequency-display');
         const radioStation = document.getElementById('radio-station');
+        const stationDescription = document.getElementById('description');
 
         const minFreq = 12.83;
         const maxFreq = 15.93;
@@ -219,16 +237,19 @@
             const freq = minFreq + (percent * (maxFreq - minFreq));
 
             radioStation.innerText = "No Station Found";
-            if (freq < 14.9 && freq > 14.8) {
+            if (freq < 15.5 && freq > 15) {
                 radioStation.innerText = "THE PATCH";
-            } else if (freq < 13.9 && freq > 13.8) {
+                stationDescription.innerText = "";
+            } else if (freq > 15.5) {
+                radioStation.innerText = "[##############]";
+            } else if (freq < 15 && freq > 14.5) {
+                radioStation.innerText = "*- yaga simplex -*";
+            } else if (freq < 14 && freq > 13.5) {
                 radioStation.innerText = "DusterDigi";
-            } else if (freq < 12.9 && freq > 12.8) {
+            } else if (freq < 13.5 && freq > 13) {
+                radioStation.innerText = "Radio :Bai:Bai";
+            } else if (freq < 13 && freq > 12.5) {
                 radioStation.innerText = "Hopetown Blues";
-            } else if (freq < 15.9 && freq > 15.8) {
-                radioStation.innerText = " *- yaga simplex -*";
-            } else if (freq < 14.5 && freq > 14.4) {
-                radioStation.innerText = "Radio BaiBai";
             }
             
             freqDisplay.innerText = freq.toFixed(2);
