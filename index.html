@@ -13,7 +13,7 @@
 </head>
     <body>
         <div id="ui-container">
-        <div id="radio-station">Radio BaiBai</div>
+        <div id="radio-station">No Station Found</div>
         <div id="frequency-display">14.94</div>
         <span id="unit">simibab</span>
     </div>
@@ -70,15 +70,15 @@
         // Lighting
         const environment = new RoomEnvironment(renderer);
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
-        const mainLight = new THREE.DirectionalLight(0xFFBB43, 3.0); 
+        const mainLight = new THREE.DirectionalLight(0xFFBBBB, 3.0); 
         mainLight.position.set(5, 10, 7);
         scene.add(mainLight);
 
-        const fillLight = new THREE.PointLight(0xFFBB43, 1);
+        const fillLight = new THREE.PointLight(0xFFBB43, 2);
         fillLight.position.set(-5, 0, -5);
         scene.add(fillLight);
 
-        const ambient = new THREE.AmbientLight(0x926CA9, 100.0); // Low ambient so shadows exist
+        const ambient = new THREE.AmbientLight(0xFFBB43, 100.0); // Low ambient so shadows exist
         scene.add(ambient);
         
         camera.position.z = 4;
@@ -126,8 +126,15 @@
         loader.load('11_alien_radio_2.gltf', (gltf) => {
             const model = gltf.scene;
             const radio_base = model.getObjectByName('radio_base');
-            wheel = model.getObjectByName('outer_ring');
+            const bgs = model.getObjectByName('feet_n_backs');
 
+            wheel = model.getObjectByName('outer_ring');
+            if (bgs) {
+                bgs.material.color.set(0x361E0F);
+                bgs.material.roughness = 1.0;
+                bgs.material.metalness = 0.56;
+                bgs.material.needsUpdate = true;
+            }
             if (radio_base) {
                 Object.assign(radio_base.material, baseTextures);
                 
@@ -174,7 +181,8 @@
         });
 
         // normal text part
-        const displayElement = document.getElementById('frequency-display');
+        const freqDisplay = document.getElementById('frequency-display');
+        const radioStation = document.getElementById('radio-station');
 
         const minFreq = 12.83;
         const maxFreq = 15.93;
@@ -185,8 +193,21 @@
             const rotation = Math.abs(wheel.rotation.y % (Math.PI * 2));
             const percent = rotation / (Math.PI * 2);
             const freq = minFreq + (percent * (maxFreq - minFreq));
+
+            radioStation.innerText = "No Station Found";
+            if (freq < 14.9 && freq > 14.8) {
+                radioStation.innerText = "THE PATCH";
+            } else if (freq < 13.9 && freq > 13.8) {
+                radioStation.innerText = "DusterDigi";
+            } else if (freq < 12.9 && freq > 12.8) {
+                radioStation.innerText = "Hopetown Blues";
+            } else if (freq < 15.9 && freq > 15.8) {
+                radioStation.innerText = " *- yaga simplex -*";
+            } else if (freq < 14.5 && freq > 14.4) {
+                radioStation.innerText = "Radio BaiBai";
+            }
             
-            displayElement.innerText = freq.toFixed(2);
+            freqDisplay.innerText = freq.toFixed(2);
         }
     </script>
 </body>
