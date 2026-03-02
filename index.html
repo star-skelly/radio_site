@@ -29,9 +29,8 @@
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
         import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
-        // Add a quick "Studio" environment so reflections have something to show
 
-        // 1. Scene Setup
+        // Scene Setup
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -41,15 +40,14 @@
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         renderer.toneMapping = THREE.ReinhardToneMapping;  
 
-        // 2. High-Contrast Lighting
-        // This creates "rim lighting" so you can see the edges of the wheel
+        // Lighting
         const environment = new RoomEnvironment(renderer);
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
-        const mainLight = new THREE.DirectionalLight(0xffffff, 1.0); 
+        const mainLight = new THREE.DirectionalLight(0xffffff, 10.0); 
         mainLight.position.set(5, 10, 7);
         scene.add(mainLight);
 
-        const fillLight = new THREE.PointLight(0xffffff, 1.);
+        const fillLight = new THREE.PointLight(0xffffff, 100.);
         fillLight.position.set(-5, 0, -5);
         scene.add(fillLight);
 
@@ -57,13 +55,14 @@
         scene.add(ambient);
         
         camera.position.z = 4;
-        camera.position.y = 2;
-        camera.position.x = -2;
-        camera.rotation.x = -0.4;
-        camera.rotation.y = -0.2;
-        camera.rotation.z = -0.1;
+        camera.position.y = 2.5;
+        camera.position.x = -4;
+        camera.rotation.x = -0.5;
+        camera.rotation.y = -0.3;
+        camera.rotation.z = -0.3;
+        camera.zoom = 1.0
 
-        // 3. Load the Model
+        // Load the Model
         let wheel;
         let radio_base;
         const textureLoader = new THREE.TextureLoader();
@@ -72,9 +71,8 @@
 
         const textureConfigs = [
             { type: 'map', url: 'textures/radio_base.png', isSRGB: true, isWheel: false },
-            { type: 'roughnessMap', url: 'textures/00_rad_glossy.png', isSRGB: false, isWheel: false },
+            { type: 'roughnessMap', url: 'textures/00_rad_roughness.png', isSRGB: false, isWheel: false },
             { type: 'normalMap', url: 'textures/00_rad_normal.png', isSRGB: false, isWheel: false },  
-            { type: 'metalnessMap', url: 'textures/00_rad_glossy.png', isSRGB: false, isWheel: false }, 
             
             // For the wheel, we use the same 'type' names so they plug into the right material slots
             { type: 'roughnessMap', url: 'textures/00_wheel_roughness.png', isSRGB: false, isWheel: true },
@@ -107,12 +105,14 @@
             if (radio_base) {
                 Object.assign(radio_base.material, baseTextures);
                 
-                radio_base.material.normalScale.set(-1., 1.);
+                radio_base.material.metalness = 1.0;
+                radio_base.material.normalScale.set(1, 1);
                 radio_base.material.needsUpdate = true;
             }            
 
             if (wheel) {
                 Object.assign(wheel.material, wheelTextures);
+                wheel.material.metalness = 1.0;
                 wheel.material.normalScale.set(-1., 1.);
                 wheel.material.needsUpdate = true;
             }
