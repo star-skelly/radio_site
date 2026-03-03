@@ -13,23 +13,21 @@
         <div id="radio-station">No Station Found</div>
         <div id="frequency-display">14.45 sb</div>
         <br>
-        <audio id="main-audio" controls autoplay>
-            <source src="" type="audio/mpeg">
-            Your browser does not support the audio element.
-        </audio>
+        <audio id="static-player" src="audio/Static.m4a" loop autoplay></audio>
+        <audio id="station-player"></audio>
         <div id="description"></div>
     </div>
 
     <style>
         #ui-container {
             position: absolute;
-            top: 50%;
+            top: 40%;
             left: 50px;
             transform: translateY(-50%);
             color: #c44e12;
             font-family: 'Courier New', Courier, monospace;
             text-shadow: 0 0 10px #950032;
-            pointer-events: none; /* So it doesn't block mouse clicks */
+            pointer-events: none;
             user-select: none;
         }
         #frequency-display {
@@ -197,9 +195,9 @@
         
         window.addEventListener("keydown", function (event) {
             if (event.key === "ArrowUp") {
-                wheel.rotation.y += 0.1;
-            } else if (event.key === "ArrowDown") {
                 wheel.rotation.y -= 0.1;
+            } else if (event.key === "ArrowDown") {
+                wheel.rotation.y += 0.1;
             }
             updateUI();
         });
@@ -248,7 +246,9 @@
         const freqDisplay = document.getElementById('frequency-display');
         const radioStation = document.getElementById('radio-station');
         const stationDescription = document.getElementById('description');
-        const audioPlay = document.getElementById('audio-source');
+        const staticPlayer = document.getElementById('static-player');
+        const stationPlayer = document.getElementById('station-player');
+        let currentStationName = null;
 
         const minFreq = 12.83;
         const maxFreq = 15.93;
@@ -265,19 +265,30 @@
             );
 
             if (activeChannel) {
+                const center = (activeChannel.min + activeChannel.max) / 2.0;
+                const dist = Math.abs(freq - center);
+                const range = Math.abs(activeChannel.max - activeChannel.min) / 2.0;
+                const strength = 1.1 * Math.log10((dist / range) + 0.2) + 0.92; 
+                stationPlayer.volume = strength;
+                staticPlayer.volume = 1.0 - strength;
+
+                if (currentStationName !== activeChannel.name) {
+                    currentStationName = activeChannel.name;
+                    stationPlayer.src = "audio/frog_drums.mp3";
+                    stationPlayer.load();
+                    stationPlayer.play();
+                }
+
                 radioStation.innerText = activeChannel.name;
                 stationDescription.innerText = activeChannel.description;
-                const newSrc = "audio/frog_drums.mp3";
-                if (audioPlayer.getAttribute('src') !== newSrc) {
-                    audioPlayer.src = newSrc;
-                    audioPlayer.load(); // Vital: tells the browser to buffer the new file
-                    audioPlayer.play(); // Browsers often block autoplay; this helps
-                }
+
             } else {
+                currentStationName = null;
+                stationPlayer.volume = 0; 
+                staticPlayer.volume = 1.0;                
                 radioStation.innerText = "NO SIGNAL";
                 stationDescription.innerText = "Keep tuning the dial...";
             }
-            
             freqDisplay.innerText = freq.toFixed(2) + " sb";
         }
     </script>
