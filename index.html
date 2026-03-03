@@ -283,18 +283,6 @@
             }
         }
 
-        // compressor details (level out different volume mp3s)
-        const compressor = audioCtx.createDynamicsCompressor();
-        compressor.threshold.setValueAtTime(-24, audioCtx.currentTime); // Point where it starts squashing
-        compressor.knee.setValueAtTime(40, audioCtx.currentTime);      // How smooth the transition is
-        const ratio = 12;                                              // How much it squashes (4-12 is good)
-        compressor.ratio.setValueAtTime(ratio, audioCtx.currentTime);
-        compressor.attack.setValueAtTime(0.003, audioCtx.currentTime); // How fast it reacts
-        compressor.release.setValueAtTime(0.25, audioCtx.currentTime); // How fast it lets go
-        filter.disconnect();
-        filter.connect(compressor);
-        compressor.connect(audioCtx.destination);
-
         function updateUI() {
             const rotation = Math.abs(wheel.rotation.y % (Math.PI * 2));
             const percent = rotation / (Math.PI * 2);
@@ -316,13 +304,13 @@
                 const center = (activeChannel.min + activeChannel.max) / 2.0;
                 const dist = Math.abs(freq - center);
                 const range = Math.abs(activeChannel.max - activeChannel.min) / 2.0;
-                const strength = Math.exp(-(Math.pow(dist / range, 2)) / (2 * Math.pow(1.5, 2)));
+                const strength = Math.exp(-(Math.pow(dist / range, 2)) / (Math.pow(0.5, 2)));
                 
                 const cutoff = 400 + (Math.pow(strength, 2) * 19600); 
                 filter.frequency.setTargetAtTime(cutoff, audioCtx.currentTime, 0.05);
                 
                 currentPlayer.volume = Math.min(1.0, strength);
-                staticPlayer.volume = 1.0 - currentPlayer.volume;
+                staticPlayer.volume = Math.max(0, 0.9 - currentPlayer.volume);
                 radioStation.innerText = activeChannel.name;
                 stationDescription.innerText = activeChannel.description;
                 console.log(strength, currentPlayer.volume, staticPlayer.volume);
