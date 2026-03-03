@@ -236,14 +236,26 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // normal text part
+        // normal text part + radio channel part
         let radioChannels = [];
+        const stationPool = {};
 
-        fetch('./channel_descriptions.json')
-            .then(res => res.json())
-            .then(data => {
-                radioChannels = data.channels;
+        fetch('./channel_descriptions.json').then(res => res.json()).then(data => {
+            radioChannels = data.channels;
+            
+            radioChannels.forEach(channel => {
+                const audio = new Audio(channel.audio);
+                audio.loop = true;
+                audio.volume = 0; // start silent
+                
+                // random timestamp start
+                audio.addEventListener('loadedmetadata', () => {
+                    audio.currentTime = Math.random() * audio.duration;
+                });
+
+                stationPool[channel.name] = audio;
             });
+        });
         const freqDisplay = document.getElementById('frequency-display');
         const radioStation = document.getElementById('radio-station');
         const stationDescription = document.getElementById('description');
@@ -255,62 +267,56 @@
         const minFreq = 12.83;
         const maxFreq = 15.93;
 
-        // Low pass filter to make the channel change more realistic
+        // muffle effect = lowpass filter
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const source = audioCtx.createMediaElementSource(baibaiPlayer);
         const filter = audioCtx.createBiquadFilter();
-        filter.type = "lowpass";
-        source.connect(filter);
+        filter.type = "lowpass"; 
         filter.connect(audioCtx.destination);
+        const sourceNodes = {};
+
+        function setupAudioGraph(player, stationName) {
+            if (!sourceNodes[stationName]) {
+                // Pipe the HTML audio element into the Web Audio API
+                const source = audioCtx.createMediaElementSource(player);
+                source.connect(filter);
+                sourceNodes[stationName] = source;
+            }
+        }
 
         function updateUI() {
-            if (!wheel) return;
-
             const rotation = Math.abs(wheel.rotation.y % (Math.PI * 2));
             const percent = rotation / (Math.PI * 2);
             const freq = minFreq + (percent * (maxFreq - minFreq));
-            
-            const activeChannel = radioChannels.find(channel => 
-                freq >= channel.min && freq <= channel.max
-            );
+            const activeChannel = radioChannels.find(ch => freq >= ch.min && freq <= ch.max);
+
+            Object.values(stationPool).forEach(player => {
+                player.volume = 0;
+                setupAudioGraph(player, name);
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                if (player.paused) {
+                    player.play().catch(err => console.log("Autoplay blocked:", err));
+                }
+            });
 
             if (activeChannel) {
+                const currentPlayer = stationPool[activeChannel.name];
                 const center = (activeChannel.min + activeChannel.max) / 2.0;
                 const dist = Math.abs(freq - center);
                 const range = Math.abs(activeChannel.max - activeChannel.min) / 2.0;
-                const variance = 0.5; // Controls how "wide" the clear signal is
-                const normalizedDist = dist / range;
-                const strength = Math.exp(-(Math.pow(normalizedDist, 2)) / (2 * Math.pow(variance, 2)));
-                const cutoffFreq = 500 + (strength * 19500);
-                filter.frequency.setTargetAtTime(cutoffFreq, audioCtx.currentTime, 0.05);
-
-                staticPlayer.volume = 1.0 - strength;
+                const strength = Math.exp(-(Math.pow(dist / range, 2)) / (2 * Math.pow(1.5, 2)));
                 
-                if (activeChannel.name === "Radio :Bai:Bai") {
-                    const newSrc = activeChannel.audio;
-                    baibaiPlayer.volume = strength;
-                    if (baibaiPlayer.getAttribute('src') !== newSrc) {
-                        baibaiPlayer.src = newSrc;
-                        baibaiPlayer.load(); // Vital: tells the browser to buffer the new file
-                        baibaiPlayer.play(); // Browsers often block autoplay; this helps
-                    }
-                } else if (currentStationName !== activeChannel.name) {
-                    stationPlayer.volume = strength;
-                    currentStationName = activeChannel.name;
-                    stationPlayer.src = "audio/frog_drums.mp3";
-                    stationPlayer.load();
-                    stationPlayer.play();
-                } else {
-                    baibaiPlayer.volume = 0;
-                }
-
+                const cutoff = 400 + (Math.pow(strength, 2) * 19600); 
+                filter.frequency.setTargetAtTime(cutoff, audioCtx.currentTime, 0.05);
+                
+                currentPlayer.volume = Math.min(1.0, strength);
+                staticPlayer.volume = 1.0 - currentPlayer.volume;
                 radioStation.innerText = activeChannel.name;
                 stationDescription.innerText = activeChannel.description;
-
+                console.log(strength, currentPlayer.volume, staticPlayer.volume);
             } else {
-                currentStationName = null;
-                stationPlayer.volume = 0; 
-                staticPlayer.volume = 1.0;                
+                filter.frequency.setTargetAtTime(400, audioCtx.currentTime, 0.05);
+                staticPlayer.volume = 1.0;
                 radioStation.innerText = "NO SIGNAL";
                 stationDescription.innerText = "Keep tuning the dial...";
             }

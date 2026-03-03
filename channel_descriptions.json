@@ -1,19 +1,19 @@
 {
     "channels":[
         {"name": "[##############]",
-        "min": 15.7,
+        "min": 15.8,
         "max": 15.9,
-        "audio": "audio/clicks.mp3",
+        "audio": "audio/frog_drums.mp3",
         "description":"this channel is not publically listed."},
         {"name": "THE PATCH",
         "min": 15.2,
         "max": 15.7,
-        "audio": "audio/thepatch.mp3",
+        "audio": "audio/frog_drums.mp3",
         "description": "YOUR #1 SOURCE FOR ALL PIRATICAL NEWS. CATCH UP ON THE MOST RECENT QUEEN'S CUPS, HEAR PERSPECTIVES FROM CIVVY SAILS, AND AS ALWAYS... SUPPORT YOUR HOSTS, THE ICONIC MESSY DUO KNOWN ACROSS THE MOON, OUR VERY OWN... ARRAT AND HEPBAN."}, 
         {"name": "Economy on Air",
         "min": 14.8,
         "max": 15.2,
-        "audio": "audio/economy.mp3",
+        "audio": "audio/frog_drums.mp3",
         "description": "Live reporting on Haven markets from trusted economic advisors. Prices reported daily."},
         {"name": "*- yaga simplex -*",
         "min": 14.3,
@@ -33,7 +33,7 @@
         {"name": "Hopetown Blues",
         "min": 12.8,
         "max": 13.3,
-        "audio": "audio/hopetownblues.mp3",
+        "audio": "audio/frog_drums.mp3",
         "description": "Listen in for a taste of the outpost soul. With blues gathered from across the Western Hemisphere, we bring you the best of Duster sound. And the music of our minds is a beautiful thing to behold."}
     ]
 }
