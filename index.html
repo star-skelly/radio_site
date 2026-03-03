@@ -255,6 +255,14 @@
         const minFreq = 12.83;
         const maxFreq = 15.93;
 
+        // Low pass filter to make the channel change more realistic
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const source = audioCtx.createMediaElementSource(baibaiPlayer);
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = "lowpass";
+        source.connect(filter);
+        filter.connect(audioCtx.destination);
+
         function updateUI() {
             if (!wheel) return;
 
@@ -273,6 +281,8 @@
                 const variance = 0.5; // Controls how "wide" the clear signal is
                 const normalizedDist = dist / range;
                 const strength = Math.exp(-(Math.pow(normalizedDist, 2)) / (2 * Math.pow(variance, 2)));
+                const cutoffFreq = 500 + (strength * 19500);
+                filter.frequency.setTargetAtTime(cutoffFreq, audioCtx.currentTime, 0.05);
 
                 staticPlayer.volume = 1.0 - strength;
                 
