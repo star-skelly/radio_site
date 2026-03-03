@@ -283,6 +283,18 @@
             }
         }
 
+        // compressor details (level out different volume mp3s)
+        const compressor = audioCtx.createDynamicsCompressor();
+        compressor.threshold.setValueAtTime(-24, audioCtx.currentTime); // Point where it starts squashing
+        compressor.knee.setValueAtTime(40, audioCtx.currentTime);      // How smooth the transition is
+        const ratio = 12;                                              // How much it squashes (4-12 is good)
+        compressor.ratio.setValueAtTime(ratio, audioCtx.currentTime);
+        compressor.attack.setValueAtTime(0.003, audioCtx.currentTime); // How fast it reacts
+        compressor.release.setValueAtTime(0.25, audioCtx.currentTime); // How fast it lets go
+        filter.disconnect();
+        filter.connect(compressor);
+        compressor.connect(audioCtx.destination);
+
         function updateUI() {
             const rotation = Math.abs(wheel.rotation.y % (Math.PI * 2));
             const percent = rotation / (Math.PI * 2);
