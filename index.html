@@ -15,6 +15,7 @@
         <br>
         <audio id="static-player" src="audio/Static.m4a" loop autoplay></audio>
         <audio id="station-player"></audio>
+        <audio id="baibai"></audio>
         <div id="description"></div>
     </div>
 
@@ -248,6 +249,7 @@
         const stationDescription = document.getElementById('description');
         const staticPlayer = document.getElementById('static-player');
         const stationPlayer = document.getElementById('station-player');
+        const baibaiPlayer = document.getElementById('baibai');
         let currentStationName = null;
 
         const minFreq = 12.83;
@@ -268,15 +270,28 @@
                 const center = (activeChannel.min + activeChannel.max) / 2.0;
                 const dist = Math.abs(freq - center);
                 const range = Math.abs(activeChannel.max - activeChannel.min) / 2.0;
-                const strength = 1.1 * Math.log10((dist / range) + 0.2) + 0.92; 
-                stationPlayer.volume = strength;
-                staticPlayer.volume = 1.0 - strength;
+                const variance = 0.5; // Controls how "wide" the clear signal is
+                const normalizedDist = dist / range;
+                const strength = Math.exp(-(Math.pow(normalizedDist, 2)) / (2 * Math.pow(variance, 2)));
 
-                if (currentStationName !== activeChannel.name) {
+                staticPlayer.volume = 1.0 - strength;
+                
+                if (activeChannel.name === "Radio :Bai:Bai") {
+                    const newSrc = activeChannel.audio;
+                    baibaiPlayer.volume = strength;
+                    if (baibaiPlayer.getAttribute('src') !== newSrc) {
+                        baibaiPlayer.src = newSrc;
+                        baibaiPlayer.load(); // Vital: tells the browser to buffer the new file
+                        baibaiPlayer.play(); // Browsers often block autoplay; this helps
+                    }
+                } else if (currentStationName !== activeChannel.name) {
+                    stationPlayer.volume = strength;
                     currentStationName = activeChannel.name;
                     stationPlayer.src = "audio/frog_drums.mp3";
                     stationPlayer.load();
                     stationPlayer.play();
+                } else {
+                    baibaiPlayer.volume = 0;
                 }
 
                 radioStation.innerText = activeChannel.name;
