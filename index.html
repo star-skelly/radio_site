@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Torobos Ham Radio</title>
+    <link rel="icon" type="image/x-icon" href="/media/logo.png">
     <style>
         body { margin: 0; overflow: hidden; background: #111; }
     </style>
@@ -13,7 +14,7 @@
         <div id="radio-station">No Station Found</div>
         <div id="frequency-display">14.45 sb</div>
         <br>
-        <audio id="static-player" src="audio/Static.m4a" loop autoplay></audio>
+        <audio id="static-player" src="audio/static.mp3" loop autoplay></audio>
         <audio id="station-player"></audio>
         <audio id="baibai"></audio>
         <div id="description"></div>
@@ -73,13 +74,13 @@
         // Lighting
         const environment = new RoomEnvironment(renderer);
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
-        //const mainLight = new THREE.DirectionalLight(0xFFBBBB, 4.0); 
-        //mainLight.position.set(-5, 10, -7);
-        //scene.add(mainLight);
+        const mainLight = new THREE.DirectionalLight(0xFFBBBB, 4.0); 
+        mainLight.position.set(-5, 10, -7);
+        scene.add(mainLight);
 
-        const fillLight = new THREE.PointLight(0x926CA9, 3.3, 0, 0.27);
-        fillLight.position.set(2.5, 1.75, -0.5);
-        fillLight.power = 100;
+        const fillLight = new THREE.PointLight(0x926CA9, 3.3, 0, -5);
+        fillLight.position.set(4.5, 1.5, -1);
+        fillLight.power = 1;
         scene.add(fillLight);
         
         const fillLight2 = new THREE.PointLight(0xFFBB43, 1.4, 0, 1.1);
@@ -196,9 +197,9 @@
         
         window.addEventListener("keydown", function (event) {
             if (event.key === "ArrowUp") {
-                wheel.rotation.y -= 0.1;
-            } else if (event.key === "ArrowDown") {
                 wheel.rotation.y += 0.1;
+            } else if (event.key === "ArrowDown") {
+                wheel.rotation.y -= 0.1;
             }
             updateUI();
         });
@@ -284,9 +285,12 @@
         }
 
         function updateUI() {
-            const rotation = Math.abs(wheel.rotation.y % (Math.PI * 2));
+            const rotation = wheel.rotation.y % (Math.PI * 2);
             const percent = rotation / (Math.PI * 2);
-            const freq = minFreq + (percent * (maxFreq - minFreq));
+            let freq = minFreq + (percent * (maxFreq - minFreq));
+            if (freq < minFreq) {
+                freq = maxFreq + (percent * (maxFreq - minFreq))
+            }
             const activeChannel = radioChannels.find(ch => freq >= ch.min && freq <= ch.max);
 
             Object.values(stationPool).forEach(player => {
@@ -310,10 +314,9 @@
                 filter.frequency.setTargetAtTime(cutoff, audioCtx.currentTime, 0.05);
                 
                 currentPlayer.volume = Math.min(1.0, strength);
-                staticPlayer.volume = Math.max(0, 0.9 - currentPlayer.volume);
+                staticPlayer.volume = Math.max(0, 0.8 - currentPlayer.volume);
                 radioStation.innerText = activeChannel.name;
                 stationDescription.innerText = activeChannel.description;
-                console.log(strength, currentPlayer.volume, staticPlayer.volume);
             } else {
                 filter.frequency.setTargetAtTime(400, audioCtx.currentTime, 0.05);
                 staticPlayer.volume = 1.0;
