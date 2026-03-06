@@ -10,8 +10,8 @@
 </head>
     <body>
         <div id="ui-container">
-        <div id="instructions">Use the &#8679 and &#8681 keys or turn the wheel to browse channels.</div>
-        <div id="instructions">Use the &#8678 and &#8680 keys to turn volume up and down.</div>
+        <div id="instructions">Use the &#8678 and &#8680 keys or turn the wheel to browse channels.</div>
+        <div id="instructions">Use the &#8679 and &#8681 keys to turn volume up and down.</div>
         <div id="radio-station">No Station Found</div>
         <div id="frequency-display">14.45 sb</div>
         <br>
@@ -102,7 +102,8 @@
         // Load the Model
         let wheel;
         let volumeDial;
-        let radio_base;
+        let radioBase;
+        let dial;
         const textureLoader = new THREE.TextureLoader();
         const loader = new GLTFLoader();
         const dracoLoader = new DRACOLoader();
@@ -146,11 +147,12 @@
 
         loader.load('11_alien_radio_2.gltf', (gltf) => {
             const model = gltf.scene;
-            const radio_base = model.getObjectByName('radio_base');
+            const radioBase = model.getObjectByName('radio_base');
             const wired = model.getObjectByName('wired');
             const bgs = model.getObjectByName('feet_n_backs');
             const grid = model.getObjectByName('grid');
             volumeDial = model.getObjectByName('volume');
+            dial = model.getObjectByName('dial_pt')
 
             wheel = model.getObjectByName('outer_ring');
             if (grid) {
@@ -165,17 +167,17 @@
                 bgs.material.metalness = 0.56;
                 bgs.material.needsUpdate = true;
             }
-            if (radio_base) {
-                const oldMat = radio_base.material;
-                radio_base.material = new THREE.MeshPhysicalMaterial().copy(oldMat);
-                Object.assign(radio_base.material, baseTextures);
+            if (radioBase) {
+                const oldMat = radioBase.material;
+                radioBase.material = new THREE.MeshPhysicalMaterial().copy(oldMat);
+                Object.assign(radioBase.material, baseTextures);
                 
-                radio_base.material.sheen = 0.1;
-                radio_base.material.sheenColor = new THREE.Color(0x704A39); 
-                radio_base.material.sheenRoughness = 0.5;
-                radio_base.material.metalness = 1.0;
-                radio_base.material.normalScale.set(-1, -1);
-                radio_base.material.needsUpdate = true;
+                radioBase.material.sheen = 0.1;
+                radioBase.material.sheenColor = new THREE.Color(0x704A39); 
+                radioBase.material.sheenRoughness = 0.5;
+                radioBase.material.metalness = 1.0;
+                radioBase.material.normalScale.set(-1, -1);
+                radioBase.material.needsUpdate = true;
             }            
 
             if (wheel) {
@@ -202,13 +204,13 @@
         const volMaxRot = Math.PI * 1.5; // A 270-degree turn
 
         window.addEventListener("keydown", function (event) {
-            if (event.key === "ArrowUp") {
+            if (event.key === "ArrowRight") {
                 wheel.rotation.y += 0.1;
-            } else if (event.key === "ArrowDown") {
-                wheel.rotation.y -= 0.1;
             } else if (event.key === "ArrowLeft") {
+                wheel.rotation.y -= 0.1;
+            } else if (event.key === "ArrowUp") {
                 volumeDial.rotation.x = Math.min(volMaxRot, volumeDial.rotation.x + 0.1);
-            } else if (event.key === "ArrowRight") {
+            } else if (event.key === "ArrowDown") {
                 volumeDial.rotation.x = Math.max(volMinRot, volumeDial.rotation.x - 0.1);
             }
             updateUI();
@@ -316,9 +318,13 @@
             const rotation = wheel.rotation.y % (Math.PI * 2);
             const percent = rotation / (Math.PI * 2);
             let freq = minFreq + (percent * (maxFreq - minFreq));
+
             if (freq < minFreq) {
                 freq = maxFreq + (percent * (maxFreq - minFreq))
             }
+
+            // update the lil dial
+            dial.rotation.y = Math.PI * 0.4 * ((freq - minFreq) / (maxFreq - minFreq));
             const activeChannel = radioChannels.find(ch => freq >= ch.min && freq <= ch.max);
 
             radioChannels.forEach(ch => {
@@ -345,7 +351,7 @@
                 filter.frequency.setTargetAtTime(cutoff, audioCtx.currentTime, 0.05);
                 
                 currentPlayer.volume = Math.min(1.0, strength);
-                staticPlayer.volume = Math.max(0.01, 0.8 - currentPlayer.volume);
+                staticPlayer.volume = Math.max(0.05, 0.8 - currentPlayer.volume);
                 radioStation.innerText = activeChannel.name;
                 stationDescription.innerText = activeChannel.description;
             } else {
