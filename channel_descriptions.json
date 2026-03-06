@@ -13,7 +13,7 @@
         {"name": "Economy on Air",
         "min": 14.8,
         "max": 15.2,
-        "audio": "audio/economy.mp3",
+        "audio": "audio/economy_mineral.mp3",
         "description": "Live reporting on Haven markets from trusted economic advisors. Prices reported daily."},
         {"name": "*- yaga simplex -*",
         "min": 14.3,

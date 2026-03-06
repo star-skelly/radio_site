@@ -11,6 +11,7 @@
     <body>
         <div id="ui-container">
         <div id="instructions">Use the &#8679 and &#8681 keys or turn the wheel to browse channels.</div>
+        <div id="instructions">Use the &#8678 and &#8680 keys to turn volume up and down.</div>
         <div id="radio-station">No Station Found</div>
         <div id="frequency-display">14.45 sb</div>
         <br>
@@ -100,6 +101,7 @@
 
         // Load the Model
         let wheel;
+        let volumeDial;
         let radio_base;
         const textureLoader = new THREE.TextureLoader();
         const loader = new GLTFLoader();
@@ -148,6 +150,7 @@
             const wired = model.getObjectByName('wired');
             const bgs = model.getObjectByName('feet_n_backs');
             const grid = model.getObjectByName('grid');
+            volumeDial = model.getObjectByName('volume');
 
             wheel = model.getObjectByName('outer_ring');
             if (grid) {
@@ -189,19 +192,27 @@
             }
             scene.add(model);
         });
-        // 4. Interaction Logic
+        
+        // Interaction Logic
         let isDragging = false;
         let previousMouseX = 0;
         let previousMouseY = 0;
         let angleChange = 0;
-        
+        const volMinRot = 0;
+        const volMaxRot = Math.PI * 1.5; // A 270-degree turn
+
         window.addEventListener("keydown", function (event) {
             if (event.key === "ArrowUp") {
                 wheel.rotation.y += 0.1;
             } else if (event.key === "ArrowDown") {
                 wheel.rotation.y -= 0.1;
+            } else if (event.key === "ArrowLeft") {
+                volumeDial.rotation.x = Math.min(volMaxRot, volumeDial.rotation.x + 0.1);
+            } else if (event.key === "ArrowRight") {
+                volumeDial.rotation.x = Math.max(volMinRot, volumeDial.rotation.x - 0.1);
             }
             updateUI();
+            updateMasterVolume();
         });
 
         window.addEventListener('mousedown', () => isDragging = true);
@@ -223,7 +234,7 @@
             previousMouseY = event.clientY;
         });
 
-        // 5. Animation Loop
+        // Animation Loop
         function animate() {
             requestAnimationFrame(animate);
             renderer.render(scene, camera);
@@ -268,11 +279,28 @@
         const minFreq = 12.83;
         const maxFreq = 15.93;
 
-        // muffle effect = lowpass filter
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // volume control = gain 
+        // 1. Setup Master Gain
+        const masterGain = audioCtx.createGain();
+        
+        masterGain.gain.value = 0.8;
+        masterGain.connect(audioCtx.destination); // This is the ONLY node connected to destination
+
+        // muffle effect
         const filter = audioCtx.createBiquadFilter();
         filter.type = "lowpass"; 
-        filter.connect(audioCtx.destination);
+        filter.connect(masterGain); 
+        
+        const staticSource = audioCtx.createMediaElementSource(staticPlayer);
+        staticSource.connect(masterGain);
+        
+        function updateMasterVolume() {
+            const masterVolume = volumeDial.rotation.x / volMaxRot;
+            masterGain.gain.setTargetAtTime(masterVolume, audioCtx.currentTime, 0.05);
+        }
+
         const sourceNodes = {};
 
         function setupAudioGraph(player, stationName) {
@@ -293,9 +321,12 @@
             }
             const activeChannel = radioChannels.find(ch => freq >= ch.min && freq <= ch.max);
 
-            Object.values(stationPool).forEach(player => {
+            radioChannels.forEach(ch => {
+                const player = stationPool[ch.name];
+                if (!player) return;
+                setupAudioGraph(player, ch.name);
                 player.volume = 0;
-                setupAudioGraph(player, name);
+
                 if (audioCtx.state === 'suspended') audioCtx.resume();
 
                 if (player.paused) {
@@ -314,7 +345,7 @@
                 filter.frequency.setTargetAtTime(cutoff, audioCtx.currentTime, 0.05);
                 
                 currentPlayer.volume = Math.min(1.0, strength);
-                staticPlayer.volume = Math.max(0, 0.8 - currentPlayer.volume);
+                staticPlayer.volume = Math.max(0.01, 0.8 - currentPlayer.volume);
                 radioStation.innerText = activeChannel.name;
                 stationDescription.innerText = activeChannel.description;
             } else {
