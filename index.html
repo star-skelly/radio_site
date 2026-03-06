@@ -49,7 +49,6 @@
         {
             "imports": {
                 "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
                 "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
             }
         }
@@ -61,6 +60,10 @@
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
         import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
 
         // Scene Setup
         const scene = new THREE.Scene();
@@ -71,6 +74,21 @@
         renderer.toneMappingExposure = 1.0; // Adjust brightness
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         renderer.toneMapping = THREE.ReinhardToneMapping;  
+        
+        // composer for glow
+        const composer = new EffectComposer(renderer);
+        const pixelRatio = renderer.getPixelRatio();
+        composer.setPixelRatio(pixelRatio);
+        composer.setSize(window.innerWidth, window.innerHeight);
+        composer.addPass(new RenderPass(scene, camera));
+
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight), 
+            0.3,  // Strength: How much it glows
+            1,  // Radius: How far the glow spreads
+            2.0  // Threshold: Anything brighter than this value will glow
+        );
+        composer.addPass(bloomPass);
 
         // Lighting
         const environment = new RoomEnvironment(renderer);
@@ -79,9 +97,9 @@
         mainLight.position.set(-5, 10, -7);
         scene.add(mainLight);
 
-        const fillLight = new THREE.PointLight(0x926CA9, 3.3, 0, -5);
-        fillLight.position.set(4.5, 1.5, -1);
-        fillLight.power = 1;
+        const fillLight = new THREE.PointLight(0x926CA9, 3.3, 0, 0);
+        fillLight.position.set(2.5, 1.75, -1.5);
+        fillLight.power = 5;
         scene.add(fillLight);
         
         const fillLight2 = new THREE.PointLight(0xFFBB43, 1.4, 0, 1.1);
@@ -104,6 +122,7 @@
         let volumeDial;
         let radioBase;
         let dial;
+        let grid;
         const textureLoader = new THREE.TextureLoader();
         const loader = new GLTFLoader();
         const dracoLoader = new DRACOLoader();
@@ -149,11 +168,11 @@
             const model = gltf.scene;
             const radioBase = model.getObjectByName('radio_base');
             const wired = model.getObjectByName('wired');
-            const bgs = model.getObjectByName('feet_n_backs');
-            const grid = model.getObjectByName('grid');
+            grid = model.getObjectByName('grid');
             volumeDial = model.getObjectByName('volume');
             dial = model.getObjectByName('dial_pt')
-
+            const bgs = model.getObjectByName('feet_n_backs');
+            
             wheel = model.getObjectByName('outer_ring');
             wheel.rotation.y = Math.PI;
             if (grid) {
@@ -161,6 +180,8 @@
                 grid.material.roughness = 1.0;
                 wired.material.metalness = 0.0;
                 grid.material.needsUpdate = true;
+                grid.material.emissive = new THREE.Color(0x361E0F);
+                grid.material.emissiveIntensity = 0;
             }
             if (bgs) {
                 bgs.material.color.set(0x361E0F);
@@ -203,14 +224,14 @@
         let angleChange = 0;
         const volMinRot = 0;
         const volMaxRot = Math.PI * 1.5; // A 270-degree turn
-        const wheelMinRot = 0;
-        const wheelMaxRot = Math.PI * 2; // A 270-degree turn
+        const wheelMinRot = 0.01;
+        const wheelMaxRot = Math.PI * 1.99;
 
         window.addEventListener("keydown", function (event) {
             if (event.key === "ArrowRight") {
-                wheel.rotation.y = Math.min(wheelMaxRot, wheel.rotation.y + 0.1);
+                wheel.rotation.y = Math.min(wheelMaxRot, wheel.rotation.y + 0.05);
             } else if (event.key === "ArrowLeft") {
-                wheel.rotation.y = Math.max(wheelMinRot, wheel.rotation.y - 0.1);
+                wheel.rotation.y = Math.max(wheelMinRot, wheel.rotation.y - 0.05);
             } else if (event.key === "ArrowUp") {
                 volumeDial.rotation.x = Math.min(volMaxRot, volumeDial.rotation.x + 0.1);
             } else if (event.key === "ArrowDown") {
@@ -238,7 +259,7 @@
         // Animation Loop
         function animate() {
             requestAnimationFrame(animate);
-            renderer.render(scene, camera);
+            composer.render(scene, camera);
         }
         animate();
 
@@ -247,6 +268,7 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
         });
 
         // normal text part + radio channel part
@@ -350,12 +372,14 @@
                 filter.frequency.setTargetAtTime(cutoff, audioCtx.currentTime, 0.05);
                 
                 currentPlayer.volume = Math.min(1.0, strength);
-                staticPlayer.volume = Math.max(0.05, 0.8 - currentPlayer.volume);
+                staticPlayer.volume = Math.max(0.01, 0.8 - currentPlayer.volume);
+                grid.material.emissiveIntensity = currentPlayer.volume * 80 + 40;
                 radioStation.innerText = activeChannel.name;
                 stationDescription.innerText = activeChannel.description;
             } else {
                 filter.frequency.setTargetAtTime(400, audioCtx.currentTime, 0.05);
                 staticPlayer.volume = 1.0;
+                grid.material.emissiveIntensity = 0;
                 radioStation.innerText = "NO SIGNAL";
                 stationDescription.innerText = "Keep tuning the dial...";
             }
