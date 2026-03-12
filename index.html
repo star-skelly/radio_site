@@ -318,6 +318,7 @@
         
         const staticSource = audioCtx.createMediaElementSource(staticPlayer);
         staticSource.connect(masterGain);
+        audioCtx.resume();
         
         function updateMasterVolume() {
             const masterVolume = volumeDial.rotation.x / volMaxRot;
