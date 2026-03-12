@@ -323,11 +323,7 @@
             const masterVolume = volumeDial.rotation.x / volMaxRot;
             masterGain.gain.setTargetAtTime(masterVolume, audioCtx.currentTime, 0.05);
         }
-        
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        if (staticPlayer.paused) {
-            staticPlayer.play().catch(err => console.log("Autoplay blocked:", err));
-        }
+    
         const sourceNodes = {};
 
         function setupAudioGraph(player, stationName) {
@@ -340,6 +336,10 @@
         }
 
         function updateUI() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            if (staticPlayer.paused) {
+                staticPlayer.play().catch(err => console.log("Autoplay blocked:", err));
+            }
             const rotation = wheel.rotation.y % (Math.PI * 2);
             const percent = rotation / (Math.PI * 2);
             let freq = minFreq + (percent * (maxFreq - minFreq));
