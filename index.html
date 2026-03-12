@@ -15,7 +15,7 @@
         <div id="radio-station">No Station Found</div>
         <div id="frequency-display">14.45 sb</div>
         <br>
-        <audio id="static-player" src="audio/static.mp3" loop autoplay></audio>
+        <audio id="static-player" src="audio/static.mp3" loop crossorigin="anonymous"></audio>
         <audio id="station-player"></audio>
         <audio id="baibai"></audio>
         <div id="description"></div>
@@ -318,7 +318,7 @@
         
         const staticSource = audioCtx.createMediaElementSource(staticPlayer);
         staticSource.connect(masterGain);
-        audioCtx.resume();
+        staticPlayer.play();
         
         function updateMasterVolume() {
             const masterVolume = volumeDial.rotation.x / volMaxRot;
