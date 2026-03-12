@@ -318,13 +318,16 @@
         
         const staticSource = audioCtx.createMediaElementSource(staticPlayer);
         staticSource.connect(masterGain);
-        staticPlayer.play();
         
         function updateMasterVolume() {
             const masterVolume = volumeDial.rotation.x / volMaxRot;
             masterGain.gain.setTargetAtTime(masterVolume, audioCtx.currentTime, 0.05);
         }
-
+        
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        if (staticPlayer.paused) {
+            staticPlayer.play().catch(err => console.log("Autoplay blocked:", err));
+        }
         const sourceNodes = {};
 
         function setupAudioGraph(player, stationName) {
